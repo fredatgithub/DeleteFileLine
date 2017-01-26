@@ -25,7 +25,19 @@ namespace DeleteFileLine.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Barclays France")]
+        [global::System.Configuration.DefaultSettingValueAttribute("log.txt")]
+        public string LogFileName {
+            get {
+                return ((string)(this["LogFileName"]));
+            }
+            set {
+                this["LogFileName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("company name")]
         public string CompanyName {
             get {
                 return ((string)(this["CompanyName"]));
@@ -37,13 +49,13 @@ namespace DeleteFileLine.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("log.txt")]
-        public string LogFileName {
+        [global::System.Configuration.DefaultSettingValueAttribute("English")]
+        public string Language {
             get {
-                return ((string)(this["LogFileName"]));
+                return ((string)(this["Language"]));
             }
             set {
-                this["LogFileName"] = value;
+                this["Language"] = value;
             }
         }
     }

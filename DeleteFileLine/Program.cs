@@ -31,8 +31,10 @@ namespace DeleteFileLine
         {"deletefirstcolumn", "false"},
         {"samename", "true"},
         {"newname", string.Empty},
-        {"log", "false" }
-      };
+        {"log", "false" },
+        {"language", "english" }
+       };
+      // TODO implement language
       var fileContent = new List<string>();
       var fileTransformed = new List<string>();
       if (arguments.Length == 0 || arguments[0].Contains("help") || arguments[0].Contains("?"))
@@ -161,6 +163,8 @@ namespace DeleteFileLine
     {
       try
       {
+        // remove Windows forbidden characters
+        // TODO
         StreamWriter sw = new StreamWriter(filename);
         sw.WriteLine($"{DateTime.Now} - {message}");
         sw.Close();

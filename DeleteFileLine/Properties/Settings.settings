@@ -2,11 +2,14 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DeleteFileLine.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="CompanyName" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Barclays France</Value>
-    </Setting>
     <Setting Name="LogFileName" Type="System.String" Scope="User">
       <Value Profile="(Default)">log.txt</Value>
+    </Setting>
+    <Setting Name="CompanyName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">company name</Value>
+    </Setting>
+    <Setting Name="Language" Type="System.String" Scope="User">
+      <Value Profile="(Default)">English</Value>
     </Setting>
   </Settings>
 </SettingsFile>
