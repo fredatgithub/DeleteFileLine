@@ -87,72 +87,71 @@ namespace DeleteFileLine
         Console.WriteLine($"There was an error while processing the file {exception}");
       }
 
-      if (fileContent.Count != 0)
+      if (fileContent.Count == 0) return;
+
+      if (argumentDictionary["deleteheader"] == "true" && argumentDictionary["hasheader"] == "true")
       {
-        if (argumentDictionary["deleteheader"] == "true" && argumentDictionary["hasheader"] == "true")
+        Log(Settings.Default.LogFileName, $"Header has been removed: {fileContent[0]}");
+        fileContent.RemoveAt(0);
+      }
+
+      if (argumentDictionary["deletefooter"] == "true" && argumentDictionary["hasfooter"] == "true")
+      {
+        Log(Settings.Default.LogFileName, $"Footer has been removed: {fileContent[fileContent.Count - 1]}");
+        fileContent.RemoveAt(fileContent.Count - 1);
+      }
+
+      if (argumentDictionary["deletefirstcolumn"] == "true")
+      {
+        Log(argumentDictionary["log"], "The first column has been deleted.");
+        foreach (string line in fileContent)
         {
-          Log(Settings.Default.LogFileName, $"Header has been removed: {fileContent[0]}");
-          fileContent.RemoveAt(0);
+          fileTransformed.Add(line.Substring(line.IndexOf(argumentDictionary["separator"], StringComparison.InvariantCulture) + 1, line.Length - line.IndexOf(argumentDictionary["separator"], StringComparison.InvariantCulture) - 1));
         }
 
-        if (argumentDictionary["deletefooter"] == "true" && argumentDictionary["hasfooter"] == "true")
-        {
-          Log(Settings.Default.LogFileName, $"Footer has been removed: {fileContent[fileContent.Count - 1]}");
-          fileContent.RemoveAt(fileContent.Count - 1);
-        }
+        fileContent = fileTransformed;
+      }
 
-        if (argumentDictionary["deletefirstcolumn"] == "true")
+      if (argumentDictionary["samename"] == "true")
+      {
+        try
         {
-          Log(argumentDictionary["log"], "The first column has been deleted.");
-          foreach (string line in fileContent)
+          using (StreamWriter sw = new StreamWriter(argumentDictionary["filename"]))
           {
-            fileTransformed.Add(line.Substring(line.IndexOf(argumentDictionary["separator"], StringComparison.InvariantCulture) + 1, line.Length - line.IndexOf(argumentDictionary["separator"], StringComparison.InvariantCulture) - 1));
-          }
-
-          fileContent = fileTransformed;
-        }
-
-        if (argumentDictionary["samename"] == "true")
-        {
-          try
-          {
-            using (StreamWriter sw = new StreamWriter(argumentDictionary["filename"]))
+            foreach (string line in fileContent)
             {
-              foreach (string line in fileContent)
-              {
-                sw.WriteLine(line);
-              }
-            }
-          }
-          catch (Exception exception)
-          {
-            if (argumentDictionary["log"] == "true")
-            {
-              Log(Settings.Default.LogFileName, $"The filename is: {argumentDictionary["filename"]} cannot be written");
-              Log(Settings.Default.LogFileName, $"The exception is: {exception}");
+              sw.WriteLine(line);
             }
           }
         }
-
-        if (argumentDictionary["samename"] == "false" && argumentDictionary["newname"] != string.Empty)
+        catch (Exception exception)
         {
-          try
+          if (argumentDictionary["log"] == "true")
           {
-            using (StreamWriter sw = new StreamWriter(argumentDictionary["newname"]))
+            Log(Settings.Default.LogFileName, $"The filename is: {argumentDictionary["filename"]} cannot be written");
+            Log(Settings.Default.LogFileName, $"The exception is: {exception}");
+          }
+        }
+      }
+
+      if (argumentDictionary["samename"] == "false" && argumentDictionary["newname"] != string.Empty)
+      {
+        try
+        {
+          using (StreamWriter sw = new StreamWriter(argumentDictionary["newname"]))
+          {
+            foreach (string line in fileContent)
             {
-              foreach (string line in fileContent)
-              {
-                sw.WriteLine(line);
-              }
+              sw.WriteLine(line);
             }
           }
-          catch (Exception exception)
+        }
+        catch (Exception exception)
+        {
+          if (argumentDictionary["log"] == "true")
           {
-            if (argumentDictionary["log"] == "true")
-            {
-              Log(Settings.Default.LogFileName, $"The filename is: {argumentDictionary["newname"]} cannot be written");
-              Log(Settings.Default.LogFileName, $"The exception is: {exception}");
-            }
+            Log(Settings.Default.LogFileName, $"The filename is: {argumentDictionary["newname"]} cannot be written");
+            Log(Settings.Default.LogFileName, $"The exception is: {exception}");
           }
         }
       }
