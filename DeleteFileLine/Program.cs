@@ -159,6 +159,29 @@ namespace DeleteFileLine
       }
     }
 
+    private static string RemoveForbiddenCharaters(string originalString, IEnumerable<string> listOfForbiddenCharacters)
+    {
+      string result = originalString;
+      foreach (string character in listOfForbiddenCharacters)
+      {
+        result = result.Replace(character, "_");
+      }
+
+      return result;
+    }
+
+    private static string RemoveWindowsForbiddenCharaters(string originalString, string characterToReplace = "_")
+    {
+      string result = originalString;
+      foreach (string character in new List<string>
+      {"/", "\\", ":", "*", "?", "\"", "<", ">", "|"})
+      {
+        result = result.Replace(character, characterToReplace);
+      }
+
+      return result;
+    }
+
     private static void Log(string filename, string message)
     {
       try
