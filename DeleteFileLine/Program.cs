@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using DeleteFileLine.Properties;
@@ -32,12 +32,11 @@ namespace DeleteFileLine
         {"samename", "true"},
         {"newname", string.Empty},
         {"log", "false" },
-        {"language", "english" }
-       };
-      // TODO implement language
+        {"removeemptyline", "true" }
+      };
       var fileContent = new List<string>();
       var fileTransformed = new List<string>();
-      if (arguments.Length == 0 || arguments[0].Contains("help") || arguments[0].Contains("?"))
+      if (arguments.Length == 0 || arguments[0].ToLower().Contains("help") || arguments[0].Contains("?"))
       {
         Usage();
         return;
@@ -60,6 +59,15 @@ namespace DeleteFileLine
         }
       }
 
+      foreach (KeyValuePair<string, string> keyValuePair in argumentDictionary)
+      {
+        if (argumentDictionary["log"] == "true" && argumentDictionary["filename"] != string.Empty)
+        {
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], $"Argument requested: {keyValuePair.Key}");
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], $"Value of the argument: {keyValuePair.Value}");
+        }
+      }
+
       // reading of the file
       try
       {
@@ -71,137 +79,131 @@ namespace DeleteFileLine
             {
               while (!sr.EndOfStream)
               {
-                fileContent.Add(sr.ReadLine());
+                string tmpLine = sr.ReadLine();
+                if (argumentDictionary["removeemptyline"] == "true" && tmpLine != null && tmpLine.Trim() != string.Empty)
+                {
+                  fileContent.Add(sr.ReadLine());
+                }
               }
             }
+
+            Log(Settings.Default.LogFileName, argumentDictionary["log"], "The file has been read correctly");
           }
           else
           {
-            if (argumentDictionary["log"] == "true")
-            {
-              Log(Settings.Default.LogFileName, $"the filename: {argumentDictionary["filename"]}");
-            }
+            Log(Settings.Default.LogFileName, argumentDictionary["log"], $"the filename: {argumentDictionary["filename"]} could be read because it doesn't exist");
           }
+        }
+        else
+        {
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], $"the filename: {argumentDictionary["filename"]} is empty, it cannot be read");
         }
       }
       catch (Exception exception)
       {
+        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while processing the file {exception}");
         Console.WriteLine($"There was an error while processing the file {exception}");
       }
 
-      if (fileContent.Count == 0) return;
-
-      if (argumentDictionary["deleteheader"] == "true" && argumentDictionary["hasheader"] == "true")
+      if (fileContent.Count != 0)
       {
-        Log(Settings.Default.LogFileName, $"Header has been removed: {fileContent[0]}");
-        fileContent.RemoveAt(0);
-      }
-
-      if (argumentDictionary["deletefooter"] == "true" && argumentDictionary["hasfooter"] == "true")
-      {
-        Log(Settings.Default.LogFileName, $"Footer has been removed: {fileContent[fileContent.Count - 1]}");
-        fileContent.RemoveAt(fileContent.Count - 1);
-      }
-
-      if (argumentDictionary["deletefirstcolumn"] == "true")
-      {
-        Log(argumentDictionary["log"], "The first column has been deleted.");
-        foreach (string line in fileContent)
+        if (argumentDictionary["deleteheader"] == "true" && argumentDictionary["hasheader"] == "true")
         {
-          fileTransformed.Add(line.Substring(line.IndexOf(argumentDictionary["separator"], StringComparison.InvariantCulture) + 1, line.Length - line.IndexOf(argumentDictionary["separator"], StringComparison.InvariantCulture) - 1));
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], $"Header (which is the first line) has been removed: {fileContent[0]}");
+          fileContent.RemoveAt(0);
         }
 
-        fileContent = fileTransformed;
-      }
-
-      if (argumentDictionary["samename"] == "true")
-      {
-        try
+        if (argumentDictionary["deletefooter"] == "true" && argumentDictionary["hasfooter"] == "true" && fileContent.Count != 0)
         {
-          using (StreamWriter sw = new StreamWriter(argumentDictionary["filename"]))
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], $"Footer (which is the last line) has been removed: {fileContent[fileContent.Count - 1]}");
+          fileContent.RemoveAt(fileContent.Count - 1);
+        }
+
+        if (argumentDictionary["deletefirstcolumn"] == "true" && fileContent.Count != 0)
+        {
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], "The first column has been deleted");
+          fileTransformed = new List<string>();
+          foreach (string line in fileContent)
           {
-            foreach (string line in fileContent)
+            fileTransformed.Add(line.Substring(line.IndexOf(argumentDictionary["separator"], StringComparison.InvariantCulture) + 1, line.Length - line.IndexOf(argumentDictionary["separator"], StringComparison.InvariantCulture) - 1));
+          }
+
+          fileContent = fileTransformed;
+        }
+
+        // If the user wants a different name for the transformed file
+        if (argumentDictionary["samename"] == "true" && argumentDictionary["filename"] != string.Empty)
+        {
+          try
+          {
+            File.Delete(argumentDictionary["filename"]);
+            using (StreamWriter sw = new StreamWriter(argumentDictionary["filename"], true))
             {
-              sw.WriteLine(line);
+              foreach (string line in fileContent)
+              {
+                if (argumentDictionary["removeemptyline"] == "true" && line.Trim() != string.Empty)
+                {
+                  sw.WriteLine(line);
+                }
+              }
             }
-          }
-        }
-        catch (Exception exception)
-        {
-          if (argumentDictionary["log"] == "true")
-          {
-            Log(Settings.Default.LogFileName, $"The filename is: {argumentDictionary["filename"]} cannot be written");
-            Log(Settings.Default.LogFileName, $"The exception is: {exception}");
-          }
-        }
-      }
 
-      if (argumentDictionary["samename"] == "false" && argumentDictionary["newname"] != string.Empty)
-      {
-        try
-        {
-          using (StreamWriter sw = new StreamWriter(argumentDictionary["newname"]))
+            Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The transformed file has been written correctly:{argumentDictionary["filename"]}");
+          }
+          catch (Exception exception)
           {
-            foreach (string line in fileContent)
+            Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The filename {argumentDictionary["filename"]} cannot be written");
+            Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The exception is: {exception}");
+          }
+        }
+
+        if (argumentDictionary["samename"] == "false" && argumentDictionary["newname"] != string.Empty)
+        {
+          try
+          {
+            using (StreamWriter sw = new StreamWriter(argumentDictionary["newname"]))
             {
-              sw.WriteLine(line);
+              foreach (string line in fileContent)
+              {
+                if (argumentDictionary["removeemptyline"] == "true" && line.Trim() != string.Empty)
+                {
+                  sw.WriteLine(line);
+                }
+              }
             }
+
+            Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The transformed file has been written correctly with the new name {argumentDictionary["newname"]}.");
           }
-        }
-        catch (Exception exception)
-        {
-          if (argumentDictionary["log"] == "true")
+          catch (Exception exception)
           {
-            Log(Settings.Default.LogFileName, $"The filename is: {argumentDictionary["newname"]} cannot be written");
-            Log(Settings.Default.LogFileName, $"The exception is: {exception}");
+            Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The filename: {argumentDictionary["newname"]} cannot be written.");
+            Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The exception is: {exception}");
           }
         }
       }
     }
 
-    private static string RemoveForbiddenCharaters(string originalString, IEnumerable<string> listOfForbiddenCharacters)
+    private static void Log(string filename, string logging, string message)
     {
-      string result = originalString;
-      foreach (string character in listOfForbiddenCharacters)
-      {
-        result = result.Replace(character, "_");
-      }
-
-      return result;
-    }
-
-    private static string RemoveWindowsForbiddenCharaters(string originalString, string characterToReplace = "_")
-    {
-      string result = originalString;
-      foreach (string character in new List<string>
-      {"/", "\\", ":", "*", "?", "\"", "<", ">", "|"})
-      {
-        result = result.Replace(character, characterToReplace);
-      }
-
-      return result;
-    }
-
-    private static void Log(string filename, string message)
-    {
+      if (logging.ToLower() != "true") return;
       try
       {
-        // remove Windows forbidden characters
-        // TODO
-        StreamWriter sw = new StreamWriter(filename);
+        StreamWriter sw = new StreamWriter(filename, true);
         sw.WriteLine($"{DateTime.Now} - {message}");
         sw.Close();
       }
       catch (Exception exception)
       {
-        Console.WriteLine($"There was an error wile writing the file: {filename}. The exception is:{exception}");
+        Console.WriteLine($"There was an error while writing the file: {filename}. The exception is:{exception}");
       }
     }
 
     private static void Usage()
     {
       Action<string> display = Console.WriteLine;
+      display(string.Empty);
       display($"DeleteFileLine is a console application written by Sogeti for {Settings.Default.CompanyName}.");
+      display("DeleteFileLine needs Microsoft .NET framework 4.0 to run, if you don't have it, download it from microsoft.com.");
       display($"Copyrighted (c) 2017 by {Settings.Default.CompanyName}, all rights reserved.");
       display(string.Empty);
       display("Usage of this program:");
@@ -210,10 +212,12 @@ namespace DeleteFileLine
       display(string.Empty);
       display("/help (this help)");
       display("/? (this help)");
+      display(string.Empty);
       display(
         "You can write argument name (not its value) in uppercase or lowercase or a mixed of them (case insensitive)");
-      display("/filename is the same as FileName or fileName");
-      display("/fileName:<name of the file to be processed> add quotes if file name has space");
+      display("/filename is the same as /FileName or /fileName");
+      display(string.Empty);
+      display("/fileName:<name of the file to be processed>");
       display("/separator:<the CSV separator> semicolon (;) is the default separator");
       display("/hasHeader:<true or false> false by default");
       display("/hasFooter:<true or false> false by default");
@@ -221,14 +225,16 @@ namespace DeleteFileLine
       display("/deleteFooter:<true or false> false by default");
       display("/deleteFirstColumn:<true or false> true by default");
       display("/sameName:<true or false> true by default");
-      display("/newName:<new name of the file which has been processed> add quotes if file name has space");
+      display("/newName:<new name of the file which has been processed>");
       display("/log:<true or false> false by default");
+      display("/removeEmptyLine:<true or false> true by default");
       display(string.Empty);
-      display("Example:");
+      display("Examples:");
       display(string.Empty);
       display("DeleteFileLine /filename:MyCSVFile.txt /separator:, /hasheader:true /hasfooter:true /deleteheader:true /deletefooter:true /deletefirstcolumn:true /log:true");
       display(string.Empty);
       display("DeleteFileLine /help (this help)");
+      display("DeleteFileLine /? (this help)");
       display(string.Empty);
     }
   }
