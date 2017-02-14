@@ -39,7 +39,7 @@ namespace DeleteFileLine
       var fileTransformed = new List<string>();
       bool numberOfLineReceivedOk = false;
       int numberOfLineInfile = 0;
-      string datedFileName = string.Empty;
+      string datedLogFileName = string.Empty;
       if (arguments.Length == 0 || arguments[0].ToLower().Contains("help") || arguments[0].Contains("?"))
       {
         Usage();
@@ -64,9 +64,17 @@ namespace DeleteFileLine
         }
       }
 
-      if (argumentDictionary["filename"] != string.Empty)
+      // check that filename doesn't any Windows forbidden characters
+      // code TODO 
+
+      if (argumentDictionary["filename"].Trim() != string.Empty)
       {
-        datedFileName = AddDateToFileName(argumentDictionary["filename"]);
+        datedLogFileName = AddDateToFileName(Settings.Default.LogFileName);
+      }
+      else
+      {
+        Usage();
+        return;
       }
       
       // We log all arguments passed in.
@@ -74,17 +82,17 @@ namespace DeleteFileLine
       {
         if (argumentDictionary["log"] == "true" && argumentDictionary["filename"] != string.Empty)
         {
-          Log(datedFileName, argumentDictionary["log"], $"Argument requested: {keyValuePair.Key}");
-          Log(datedFileName, argumentDictionary["log"], $"Value of the argument: {keyValuePair.Value}");
+          Log(datedLogFileName, argumentDictionary["log"], $"Argument requested: {keyValuePair.Key}");
+          Log(datedLogFileName, argumentDictionary["log"], $"Value of the argument: {keyValuePair.Value}");
         }
       }
 
       // reading of the CSV file
       try
       {
-        if (argumentDictionary["filename"] != string.Empty)
+        if (argumentDictionary["filename"].Trim() != string.Empty)
         {
-          if (File.Exists(argumentDictionary["filename"]))
+          if (File.Exists(argumentDictionary["filename"].Trim()))
           {
             using (StreamReader sr = new StreamReader(argumentDictionary["filename"]))
             {
@@ -97,32 +105,42 @@ namespace DeleteFileLine
                     CultureInfo.InvariantCulture, out numberOfLineInfile);
                   if (!parseLastLineTointOk)
                   {
-                    Console.WriteLine("There was an error while parsing the last line of the file to an integer to know the number of lines in the file.");
+                    const string tmpErrorMessage = "There was an error while parsing the last line of the file to an integer to know the number of lines in the file.";
+                    Log(datedLogFileName, argumentDictionary["log"], $"{tmpErrorMessage}");
+                    Console.WriteLine($"{tmpErrorMessage}");
                   }
                 }
 
-                if (argumentDictionary["removeemptyline"] == "true" && tmpLine != null && tmpLine.Trim() != string.Empty)
+                if (tmpLine != null)
                 {
-                  fileContent.Add(sr.ReadLine());
+                  if (argumentDictionary["removeemptyline"] == "false")
+                  {
+                    fileContent.Add(sr.ReadLine());
+                  }
+                  else if (argumentDictionary["removeemptyline"] == "true" && tmpLine != string.Empty)
+                  {
+                    fileContent.Add(sr.ReadLine());
+                  }
                 }
               }
             }
 
-            Log(datedFileName, argumentDictionary["log"], "The file has been read correctly");
+            Log(datedLogFileName, argumentDictionary["log"], "The file has been read correctly");
+            Log(datedLogFileName, argumentDictionary["log"], $"The footer of the file states {numberOfLineInfile} lines.");
           }
           else
           {
-            Log(datedFileName, argumentDictionary["log"], $"the filename: {argumentDictionary["filename"]} could be read because it doesn't exist");
+            Log(datedLogFileName, argumentDictionary["log"], $"the filename: {argumentDictionary["filename"]} could be read because it doesn't exist");
           }
         }
         else
         {
-          Log(datedFileName, argumentDictionary["log"], $"the filename: {argumentDictionary["filename"]} is empty, it cannot be read");
+          Log(datedLogFileName, argumentDictionary["log"], $"the filename: {argumentDictionary["filename"]} is empty, it cannot be read");
         }
       }
       catch (Exception exception)
       {
-        Log(datedFileName, argumentDictionary["log"], $"There was an error while processing the file {exception}");
+        Log(datedLogFileName, argumentDictionary["log"], $"There was an error while processing the file {exception}");
         Console.WriteLine($"There was an error while processing the file {exception}");
       }
 
@@ -130,21 +148,21 @@ namespace DeleteFileLine
       {
         if (argumentDictionary["deleteheader"] == "true" && argumentDictionary["hasheader"] == "true")
         {
-          Log(datedFileName, argumentDictionary["log"], $"Header (which is the first line) has been removed: {fileContent[0]}");
+          Log(datedLogFileName, argumentDictionary["log"], $"Header (which is the first line) has been removed: {fileContent[0]}");
           fileContent.RemoveAt(0);
         }
 
         if (argumentDictionary["deletefooter"] == "true" && argumentDictionary["hasfooter"] == "true" && fileContent.Count != 0)
         {
-          Log(datedFileName, argumentDictionary["log"], $"{numberOfLineInfile} lines stated in footer");
-          Log(datedFileName, argumentDictionary["log"], $"The file has {fileContent.Count - 1} lines");
-          Log(datedFileName, argumentDictionary["log"], $"Footer (which is the last line) has been removed: {fileContent[fileContent.Count - 1]}");
+          Log(datedLogFileName, argumentDictionary["log"], $"{numberOfLineInfile} lines stated in footer");
+          Log(datedLogFileName, argumentDictionary["log"], $"The file has {fileContent.Count - 1} lines");
+          Log(datedLogFileName, argumentDictionary["log"], $"Footer (which is the last line) has been removed: {fileContent[fileContent.Count - 1]}");
           fileContent.RemoveAt(fileContent.Count - 1);
         }
 
         if (argumentDictionary["deletefirstcolumn"] == "true" && fileContent.Count != 0)
         {
-          Log(datedFileName, argumentDictionary["log"], "The first column has been deleted");
+          Log(datedLogFileName, argumentDictionary["log"], "The first column has been deleted");
           fileTransformed = new List<string>();
           foreach (string line in fileContent)
           {
@@ -177,12 +195,12 @@ namespace DeleteFileLine
               }
             }
 
-            Log(datedFileName, argumentDictionary["log"], $"The transformed file has been written correctly:{argumentDictionary["filename"]}");
+            Log(datedLogFileName, argumentDictionary["log"], $"The transformed file has been written correctly:{argumentDictionary["filename"]}");
           }
           catch (Exception exception)
           {
-            Log(datedFileName, argumentDictionary["log"], $"The filename {argumentDictionary["filename"]} cannot be written");
-            Log(datedFileName, argumentDictionary["log"], $"The exception is: {exception}");
+            Log(datedLogFileName, argumentDictionary["log"], $"The filename {argumentDictionary["filename"]} cannot be written");
+            Log(datedLogFileName, argumentDictionary["log"], $"The exception is: {exception}");
           }
         }
 
@@ -201,11 +219,11 @@ namespace DeleteFileLine
               }
             }
 
-            Log(datedFileName, argumentDictionary["log"], $"The transformed file has been written correctly with the new name {argumentDictionary["newname"]}.");
+            Log(datedLogFileName, argumentDictionary["log"], $"The transformed file has been written correctly with the new name {argumentDictionary["newname"]}.");
           }
           catch (Exception exception)
           {
-            Log(datedFileName, argumentDictionary["log"], $"The filename: {argumentDictionary["newname"]} cannot be written.");
+            Log(datedLogFileName, argumentDictionary["log"], $"The filename: {argumentDictionary["newname"]} cannot be written.");
             Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The exception is: {exception}");
           }
         }
@@ -218,8 +236,9 @@ namespace DeleteFileLine
       // We strip the fileName and add a datetime before the extension of the filename
       string tmpFileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
       string tmpFileNameExtension = Path.GetExtension(fileName);
-      string tmpDateTime = DateTime.Now.ToLongTimeString();
-      result = $"{tmpFileNameWithoutExtension}_{tmpDateTime}.{tmpFileNameExtension}"; 
+      string tmpDateTime = DateTime.Now.ToShortDateString();
+      tmpDateTime = tmpDateTime.Replace('/', '-');
+      result = $"{tmpFileNameWithoutExtension}_{tmpDateTime}{tmpFileNameExtension}"; 
 
       return result;
     }
