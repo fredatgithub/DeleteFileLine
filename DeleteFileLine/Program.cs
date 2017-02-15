@@ -64,8 +64,9 @@ namespace DeleteFileLine
         }
       }
 
-      // check that filename doesn't any Windows forbidden characters
+      // check that filename doesn't any Windows forbidden characters and trim all space at the start of the name.
       // code TODO 
+      argumentDictionary["filename"] = RemoveWindowsForbiddenCharacters(argumentDictionary["filename"]).TrimStart();
 
       if (argumentDictionary["filename"].Trim() != string.Empty)
       {
@@ -230,10 +231,35 @@ namespace DeleteFileLine
       }
     }
 
+    /// <summary>
+    /// Remove all Windows forbidden characters for a Windows path.
+    /// </summary>
+    /// <param name="path">The initial string to be processed.</param>
+    /// <returns>A string without Windows forbidden characters.</returns>
+    private static string RemoveWindowsForbiddenCharacters(string path)
+    {
+      string result = path;
+      // We remove all characters which are forbidden for a Windows path
+      // TODO
+      string[] forbiddenWindowsFilenameCharacters = { "\\", "/", ":", "*", "?", "\"", "<", ">", "|" };
+      // Linq version return forbiddenWindowsFilenameCharacters.Aggregate(result, (current, item) => current.Replace(item, string.Empty));
+      foreach (var item in forbiddenWindowsFilenameCharacters)
+      {
+        result = result.Replace(item, string.Empty);
+      }
+
+      return result;
+    }
+
+    /// <summary>
+    /// Add date to the file name.
+    /// </summary>
+    /// <param name="fileName">The name of the file.</param>
+    /// <returns>A string with the date at the end of the file name.</returns>
     private static string AddDateToFileName(string fileName)
     {
       string result = string.Empty;
-      // We strip the fileName and add a datetime before the extension of the filename
+      // We strip the fileName and add a datetime before the extension of the filename.
       string tmpFileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
       string tmpFileNameExtension = Path.GetExtension(fileName);
       string tmpDateTime = DateTime.Now.ToShortDateString();
@@ -243,6 +269,12 @@ namespace DeleteFileLine
       return result;
     }
 
+    /// <summary>
+    /// The log file to record all activities.
+    /// </summary>
+    /// <param name="filename">The name of the file.</param>
+    /// <param name="logging">Do we log or not?</param>
+    /// <param name="message">The message to be logged.</param>
     private static void Log(string filename, string logging, string message)
     {
       if (logging.ToLower() != "true") return;
@@ -258,6 +290,9 @@ namespace DeleteFileLine
       }
     }
 
+    /// <summary>
+    /// If the user requests help or gives no argument, then we display the help section.
+    /// </summary>
     private static void Usage()
     {
       Action<string> display = Console.WriteLine;
