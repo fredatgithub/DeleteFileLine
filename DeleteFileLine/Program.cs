@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using DeleteFileLine.Properties;
 
 namespace DeleteFileLine
@@ -33,13 +34,16 @@ namespace DeleteFileLine
         {"samename", "true"},
         {"newname", string.Empty},
         {"log", "false" },
-        {"removeemptyline", "true" }
+        {"removeemptylines", "true" },
+        {"countlines", "false" }
       };
       var fileContent = new List<string>();
       var fileTransformed = new List<string>();
       bool numberOfLineReceivedOk = false;
       int numberOfLineInfile = 0;
+      bool hasExtraArguments = false;
       string datedLogFileName = string.Empty;
+      byte returnCode = 1;
       if (arguments.Length == 0 || arguments[0].ToLower().Contains("help") || arguments[0].Contains("?"))
       {
         Usage();
@@ -49,9 +53,21 @@ namespace DeleteFileLine
       // we split arguments into the dictionary
       foreach (string argument in arguments)
       {
-        if (argument.IndexOf(':') == -1) continue;
-        string argumentKey = argument.Substring(1, argument.IndexOf(':') - 1).ToLower();
-        string argumentValue = argument.Substring(argument.IndexOf(':') + 1, argument.Length - (argument.IndexOf(':') + 1));
+        string argumentKey = string.Empty;
+        string argumentValue = string.Empty;
+        if (argument.IndexOf(':') != -1)
+        {
+          argumentKey = argument.Substring(1, argument.IndexOf(':') - 1).ToLower();
+          argumentValue = argument.Substring(argument.IndexOf(':') + 1,
+            argument.Length - (argument.IndexOf(':') + 1));
+        }
+        else
+        {
+          // If we have an argument without the colon sign (:) then we add it to the dictionary
+          argumentKey = argument;
+          argumentValue = "The argument passed in does not have any value. The colon sign (:) is missing.";
+        }
+
         if (argumentDictionary.ContainsKey(argumentKey))
         {
           // set the value of the argument
@@ -61,11 +77,25 @@ namespace DeleteFileLine
         {
           // we add any other or new argument into the dictionary to look at them in the log
           argumentDictionary.Add(argumentKey, argumentValue);
+          hasExtraArguments = true;
         }
+      }
+
+      // We check if countlines is true then removeemptyline = true
+      if (argumentDictionary["countlines"] == "true")
+      {
+        argumentDictionary["removeemptylines"] = "true";
       }
 
       // check that filename doesn't any Windows forbidden characters and trim all space characters at the start of the name.
       argumentDictionary["filename"] = RemoveWindowsForbiddenCharacters(argumentDictionary["filename"]).TrimStart();
+
+      // if log file name is empty in XML file then we define it with a default value like "Log"
+      if (Settings.Default.LogFileName.Trim() == string.Empty)
+      {
+        Settings.Default.LogFileName = "Log";
+        Settings.Default.Save();
+      }
 
       if (argumentDictionary["filename"].Trim() != string.Empty)
       {
@@ -76,14 +106,25 @@ namespace DeleteFileLine
         Usage();
         return;
       }
-      
+
       // We log all arguments passed in.
       foreach (KeyValuePair<string, string> keyValuePair in argumentDictionary)
       {
-        if (argumentDictionary["log"] == "true" && argumentDictionary["filename"] != string.Empty)
+        if (argumentDictionary["log"] == "true")
         {
           Log(datedLogFileName, argumentDictionary["log"], $"Argument requested: {keyValuePair.Key}");
           Log(datedLogFileName, argumentDictionary["log"], $"Value of the argument: {keyValuePair.Value}");
+        }
+      }
+
+      //we log extra arguments
+      if (hasExtraArguments && argumentDictionary["log"] == "true")
+      {
+        Log(datedLogFileName, argumentDictionary["log"], $"Here are a list of argument passed in but not understood and thus not processed.");
+        for (int i = 12; i <= argumentDictionary.Count - 1; i++)
+        {
+          Log(datedLogFileName, argumentDictionary["log"], $"Extra argument requested: {argumentDictionary.Keys.ElementAt(i)}");
+          Log(datedLogFileName, argumentDictionary["log"], $"Value of the extra argument: {argumentDictionary.Values.ElementAt(i)}");
         }
       }
 
@@ -92,7 +133,7 @@ namespace DeleteFileLine
       {
         if (argumentDictionary["filename"].Trim() != string.Empty)
         {
-          if (File.Exists(argumentDictionary["filename"].Trim()))
+          if (File.Exists(argumentDictionary["filename"]))
           {
             using (StreamReader sr = new StreamReader(argumentDictionary["filename"]))
             {
@@ -113,11 +154,11 @@ namespace DeleteFileLine
 
                 if (tmpLine != null)
                 {
-                  if (argumentDictionary["removeemptyline"] == "false")
+                  if (argumentDictionary["removeemptylines"] == "false")
                   {
                     fileContent.Add(tmpLine);
                   }
-                  else if (argumentDictionary["removeemptyline"] == "true" && tmpLine != string.Empty)
+                  else if (argumentDictionary["removeemptylines"] == "true" && tmpLine != string.Empty)
                   {
                     fileContent.Add(tmpLine);
                   }
@@ -148,7 +189,7 @@ namespace DeleteFileLine
       {
         if (argumentDictionary["deleteheader"] == "true" && argumentDictionary["hasheader"] == "true")
         {
-          Log(datedLogFileName, argumentDictionary["log"], $"Header (which is the first line) has been removed: {fileContent[0]}");
+          Log(datedLogFileName, argumentDictionary["log"], $"Header (which is the first line) has been removed, it was: {fileContent[0]}");
           fileContent.RemoveAt(0);
         }
 
@@ -156,7 +197,7 @@ namespace DeleteFileLine
         {
           Log(datedLogFileName, argumentDictionary["log"], $"{numberOfLineInfile} lines stated in footer");
           Log(datedLogFileName, argumentDictionary["log"], $"The file has {fileContent.Count - 1} lines");
-          Log(datedLogFileName, argumentDictionary["log"], $"Footer (which is the last line) has been removed: {fileContent[fileContent.Count - 1]}");
+          Log(datedLogFileName, argumentDictionary["log"], $"Footer (which is the last line) has been removed, it was: {fileContent[fileContent.Count - 1]}");
           fileContent.RemoveAt(fileContent.Count - 1);
         }
 
@@ -172,10 +213,21 @@ namespace DeleteFileLine
           fileContent = fileTransformed;
         }
 
+        // we free up memory
+        fileTransformed = null;
+
         //We check integrity of the file i.e. number of line stated equals to the number of line written
         if (fileContent.Count == numberOfLineInfile)
         {
           numberOfLineReceivedOk = true;
+          Log(datedLogFileName, argumentDictionary["log"], $"The file has the same number of lines as stated in the last line which is {numberOfLineInfile} lines.");
+          returnCode = 0;
+        }
+        else
+        {
+          numberOfLineReceivedOk = false;
+          Log(datedLogFileName, argumentDictionary["log"], $"The file has not the same number of lines {fileContent.Count} as stated in the last line which is {numberOfLineInfile} lines.");
+          returnCode = 3;
         }
 
         // If the user wants a different name for the transformed file
@@ -188,7 +240,7 @@ namespace DeleteFileLine
             {
               foreach (string line in fileContent)
               {
-                if (argumentDictionary["removeemptyline"] == "true" && line.Trim() != string.Empty)
+                if (argumentDictionary["removeemptylines"] == "true" && line.Trim() != string.Empty)
                 {
                   sw.WriteLine(line);
                 }
@@ -212,7 +264,7 @@ namespace DeleteFileLine
             {
               foreach (string line in fileContent)
               {
-                if (argumentDictionary["removeemptyline"] == "true" && line.Trim() != string.Empty)
+                if (argumentDictionary["removeemptylines"] == "true" && line.Trim() != string.Empty)
                 {
                   sw.WriteLine(line);
                 }
@@ -228,6 +280,40 @@ namespace DeleteFileLine
           }
         }
       }
+      else
+      {
+        // filecontent is empty
+        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The file cannot be processed because it is empty.");
+      }
+
+      // Managing return code : we write a file with the return code which will be read by the DOS script to import SQL tables
+      const string returnCodeFileName = "ReturnCode.txt";
+      try
+      {
+        File.Delete(returnCodeFileName);
+        StreamWriter sw = new StreamWriter(returnCodeFileName, false);
+        sw.WriteLine(returnCode);
+        sw.Close();
+        Log(datedLogFileName, argumentDictionary["log"], $"The return code has been written into the file {returnCodeFileName}, the return code is {returnCode}.");
+      }
+      catch (UnauthorizedAccessException unauthorizedAccessException)
+      {
+        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {unauthorizedAccessException}");
+        Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{unauthorizedAccessException}");
+      }
+      catch (IOException ioException)
+      {
+        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {ioException}");
+        Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{ioException}");
+      }
+      catch (Exception exception)
+      {
+        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {exception}");
+        Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{exception}");
+      }
+
+      Log(datedLogFileName, argumentDictionary["log"], $"END OF LOG.");
+      Log(datedLogFileName, argumentDictionary["log"], "-----------");
     }
 
     /// <summary>
@@ -239,9 +325,7 @@ namespace DeleteFileLine
     {
       string result = path;
       // We remove all characters which are forbidden for a Windows path
-      // TODO
       string[] forbiddenWindowsFilenameCharacters = { "\\", "/", ":", "*", "?", "\"", "<", ">", "|" };
-      // Linq version return forbiddenWindowsFilenameCharacters.Aggregate(result, (current, item) => current.Replace(item, string.Empty));
       foreach (var item in forbiddenWindowsFilenameCharacters)
       {
         result = result.Replace(item, string.Empty);
@@ -263,7 +347,7 @@ namespace DeleteFileLine
       string tmpFileNameExtension = Path.GetExtension(fileName);
       string tmpDateTime = DateTime.Now.ToShortDateString();
       tmpDateTime = tmpDateTime.Replace('/', '-');
-      result = $"{tmpFileNameWithoutExtension}_{tmpDateTime}{tmpFileNameExtension}"; 
+      result = $"{tmpFileNameWithoutExtension}_{tmpDateTime}{tmpFileNameExtension}";
 
       return result;
     }
@@ -277,6 +361,7 @@ namespace DeleteFileLine
     private static void Log(string filename, string logging, string message)
     {
       if (logging.ToLower() != "true") return;
+      if (filename.Trim() == string.Empty) return;
       try
       {
         StreamWriter sw = new StreamWriter(filename, true);
@@ -321,7 +406,8 @@ namespace DeleteFileLine
       display("/sameName:<true or false> true by default");
       display("/newName:<new name of the file which has been processed>");
       display("/log:<true or false> false by default");
-      display("/removeEmptyLine:<true or false> true by default");
+      display("/removeemptylines:<true or false> true by default");
+      display("countlines:<true or false> false by default");
       display(string.Empty);
       display("Examples:");
       display(string.Empty);
