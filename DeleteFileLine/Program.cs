@@ -64,8 +64,7 @@ namespace DeleteFileLine
         }
       }
 
-      // check that filename doesn't any Windows forbidden characters and trim all space at the start of the name.
-      // code TODO 
+      // check that filename doesn't any Windows forbidden characters and trim all space characters at the start of the name.
       argumentDictionary["filename"] = RemoveWindowsForbiddenCharacters(argumentDictionary["filename"]).TrimStart();
 
       if (argumentDictionary["filename"].Trim() != string.Empty)
@@ -116,11 +115,11 @@ namespace DeleteFileLine
                 {
                   if (argumentDictionary["removeemptyline"] == "false")
                   {
-                    fileContent.Add(sr.ReadLine());
+                    fileContent.Add(tmpLine);
                   }
                   else if (argumentDictionary["removeemptyline"] == "true" && tmpLine != string.Empty)
                   {
-                    fileContent.Add(sr.ReadLine());
+                    fileContent.Add(tmpLine);
                   }
                 }
               }
