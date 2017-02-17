@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using DeleteFileLine.Properties;
 
 namespace DeleteFileLine
@@ -39,7 +41,6 @@ namespace DeleteFileLine
       };
       var fileContent = new List<string>();
       var fileTransformed = new List<string>();
-      bool numberOfLineReceivedOk = false;
       int numberOfLineInfile = 0;
       bool hasExtraArguments = false;
       string datedLogFileName = string.Empty;
@@ -106,6 +107,9 @@ namespace DeleteFileLine
         Usage();
         return;
       }
+
+      // Add version of the program at the beginning of the log
+      Log(datedLogFileName, argumentDictionary["log"], $"DeleteFileLine.exe is in version {GetAssemblyVersion()}");
 
       // We log all arguments passed in.
       foreach (KeyValuePair<string, string> keyValuePair in argumentDictionary)
@@ -219,13 +223,11 @@ namespace DeleteFileLine
         //We check integrity of the file i.e. number of line stated equals to the number of line written
         if (fileContent.Count == numberOfLineInfile)
         {
-          numberOfLineReceivedOk = true;
           Log(datedLogFileName, argumentDictionary["log"], $"The file has the same number of lines as stated in the last line which is {numberOfLineInfile} lines.");
           returnCode = 0;
         }
         else
         {
-          numberOfLineReceivedOk = false;
           Log(datedLogFileName, argumentDictionary["log"], $"The file has not the same number of lines {fileContent.Count} as stated in the last line which is {numberOfLineInfile} lines.");
           returnCode = 3;
         }
@@ -353,6 +355,17 @@ namespace DeleteFileLine
     }
 
     /// <summary>
+    /// Get assembly version.
+    /// </summary>
+    /// <returns>A string with all assembly versions like major, minor, build.</returns>
+    private static string GetAssemblyVersion()
+    {
+      Assembly assembly = Assembly.GetExecutingAssembly();
+      FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+      return $"{fvi.FileMajorPart}.{fvi.FileMinorPart}.{fvi.FileBuildPart}.{fvi.FilePrivatePart}";
+    }
+
+    /// <summary>
     /// The log file to record all activities.
     /// </summary>
     /// <param name="filename">The name of the file.</param>
@@ -382,6 +395,7 @@ namespace DeleteFileLine
       Action<string> display = Console.WriteLine;
       display(string.Empty);
       display($"DeleteFileLine is a console application written by Sogeti for {Settings.Default.CompanyName}.");
+      display($"DeleteFileLine.exe is in version {GetAssemblyVersion()}");
       display("DeleteFileLine needs Microsoft .NET framework 4.0 to run, if you don't have it, download it from microsoft.com.");
       display($"Copyrighted (c) 2017 by {Settings.Default.CompanyName}, all rights reserved.");
       display(string.Empty);
