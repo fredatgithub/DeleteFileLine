@@ -171,7 +171,10 @@ namespace DeleteFileLine
             }
 
             Log(datedLogFileName, argumentDictionary["log"], "The file has been read correctly");
-            Log(datedLogFileName, argumentDictionary["log"], $"The footer of the file states {numberOfLineInfile} lines.");
+            if (argumentDictionary["countlines"] == "true")
+            {
+              Log(datedLogFileName, argumentDictionary["log"], $"The footer of the file states {numberOfLineInfile} lines.");
+            }
           }
           else
           {
@@ -199,9 +202,13 @@ namespace DeleteFileLine
 
         if (argumentDictionary["deletefooter"] == "true" && argumentDictionary["hasfooter"] == "true" && fileContent.Count != 0)
         {
-          Log(datedLogFileName, argumentDictionary["log"], $"{numberOfLineInfile} lines stated in footer");
+          if (argumentDictionary["countlines"] == "true")
+          {
+            Log(datedLogFileName, argumentDictionary["log"], $"{numberOfLineInfile} lines stated in footer");
+            Log(datedLogFileName, argumentDictionary["log"], $"Footer (which is the last line) has been removed, it was: {fileContent[fileContent.Count - 1]}");
+          }
+          
           Log(datedLogFileName, argumentDictionary["log"], $"The file has {fileContent.Count - 1} lines");
-          Log(datedLogFileName, argumentDictionary["log"], $"Footer (which is the last line) has been removed, it was: {fileContent[fileContent.Count - 1]}");
           fileContent.RemoveAt(fileContent.Count - 1);
         }
 
@@ -221,15 +228,20 @@ namespace DeleteFileLine
         fileTransformed = null;
 
         //We check integrity of the file i.e. number of line stated equals to the number of line written
-        if (fileContent.Count == numberOfLineInfile)
+        if (fileContent.Count == numberOfLineInfile && argumentDictionary["countlines"] == "true")
         {
           Log(datedLogFileName, argumentDictionary["log"], $"The file has the same number of lines as stated in the last line which is {numberOfLineInfile} lines.");
           returnCode = 0;
         }
-        else
+        else if (fileContent.Count != numberOfLineInfile && argumentDictionary["countlines"] == "true")
         {
           Log(datedLogFileName, argumentDictionary["log"], $"The file has not the same number of lines {fileContent.Count} as stated in the last line which is {numberOfLineInfile} lines.");
           returnCode = 3;
+        }
+
+        if (argumentDictionary["countlines"] == "false")
+        {
+          returnCode = 0;
         }
 
         // If the user wants a different name for the transformed file
@@ -285,33 +297,38 @@ namespace DeleteFileLine
       else
       {
         // filecontent is empty
-        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The file cannot be processed because it is empty.");
+        Log(Settings.Default.LogFileName, argumentDictionary["log"], "The file cannot be processed because it is empty.");
       }
 
-      // Managing return code : we write a file with the return code which will be read by the DOS script to import SQL tables
-      const string returnCodeFileName = "ReturnCode.txt";
-      try
+      if (argumentDictionary["countlines"] == "true")
       {
-        File.Delete(returnCodeFileName);
-        StreamWriter sw = new StreamWriter(returnCodeFileName, false);
-        sw.WriteLine(returnCode);
-        sw.Close();
-        Log(datedLogFileName, argumentDictionary["log"], $"The return code has been written into the file {returnCodeFileName}, the return code is {returnCode}.");
-      }
-      catch (UnauthorizedAccessException unauthorizedAccessException)
-      {
-        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {unauthorizedAccessException}");
-        Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{unauthorizedAccessException}");
-      }
-      catch (IOException ioException)
-      {
-        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {ioException}");
-        Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{ioException}");
-      }
-      catch (Exception exception)
-      {
-        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {exception}");
-        Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{exception}");
+
+
+        // Managing return code : we write a file with the return code which will be read by the DOS script to import SQL tables
+        const string returnCodeFileName = "ReturnCode.txt";
+        try
+        {
+          File.Delete(returnCodeFileName);
+          StreamWriter sw = new StreamWriter(returnCodeFileName, false);
+          sw.WriteLine(returnCode);
+          sw.Close();
+          Log(datedLogFileName, argumentDictionary["log"], $"The return code has been written into the file {returnCodeFileName}, the return code is {returnCode}.");
+        }
+        catch (UnauthorizedAccessException unauthorizedAccessException)
+        {
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {unauthorizedAccessException}");
+          Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{unauthorizedAccessException}");
+        }
+        catch (IOException ioException)
+        {
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {ioException}");
+          Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{ioException}");
+        }
+        catch (Exception exception)
+        {
+          Log(Settings.Default.LogFileName, argumentDictionary["log"], $"There was an error while writing the return code file: {returnCodeFileName}. The exception is: {exception}");
+          Console.WriteLine($"There was an error while writing the return code file: {returnCodeFileName}. The exception is:{exception}");
+        }
       }
 
       Log(datedLogFileName, argumentDictionary["log"], $"END OF LOG.");
