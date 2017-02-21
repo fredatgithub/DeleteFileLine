@@ -40,10 +40,14 @@ namespace DeleteFileLine
         {"countlines", "false" },
         {"verifyheaderandfooter", "false" }
       };
+      // the variable numberOfInitialDictionaryItems is used for the log to list all non-standard arguments passed in.
+      int numberOfInitialDictionaryItems = 13;
       var fileContent = new List<string>();
       var fileTransformed = new List<string>();
       int numberOfLineInfile = 0;
       bool hasExtraArguments = false;
+      bool fileHasHeader = false;
+      bool fileHasFooter = false;
       string datedLogFileName = string.Empty;
       byte returnCode = 1;
       if (arguments.Length == 0 || arguments[0].ToLower().Contains("help") || arguments[0].Contains("?"))
@@ -95,7 +99,14 @@ namespace DeleteFileLine
       // if log file name is empty in XML file then we define it with a default value like "Log"
       if (Settings.Default.LogFileName.Trim() == string.Empty)
       {
-        Settings.Default.LogFileName = "Log";
+        Settings.Default.LogFileName = "Log.txt";
+        Settings.Default.Save();
+      }
+
+      // if Company name is empty in XML file then we define it with a default value like "Company name"
+      if (Settings.Default.CompanyName.Trim() == string.Empty)
+      {
+        Settings.Default.LogFileName = "Company name";
         Settings.Default.Save();
       }
 
@@ -125,8 +136,8 @@ namespace DeleteFileLine
       //we log extra arguments
       if (hasExtraArguments && argumentDictionary["log"] == "true")
       {
-        Log(datedLogFileName, argumentDictionary["log"], $"Here are a list of argument passed in but not understood and thus not processed.");
-        for (int i = 12; i <= argumentDictionary.Count - 1; i++)
+        Log(datedLogFileName, argumentDictionary["log"], $"Here are a list of argument passed in but not understood and thus not used.");
+        for (int i = numberOfInitialDictionaryItems; i <= argumentDictionary.Count - 1; i++)
         {
           Log(datedLogFileName, argumentDictionary["log"], $"Extra argument requested: {argumentDictionary.Keys.ElementAt(i)}");
           Log(datedLogFileName, argumentDictionary["log"], $"Value of the extra argument: {argumentDictionary.Values.ElementAt(i)}");
@@ -145,8 +156,14 @@ namespace DeleteFileLine
               while (!sr.EndOfStream)
               {
                 string tmpLine = sr.ReadLine();
+                if (tmpLine != null && tmpLine.StartsWith("0;"))
+                {
+                  fileHasHeader = true;
+                }
+
                 if (tmpLine != null && tmpLine.StartsWith("9;"))
                 {
+                  fileHasFooter = true;
                   bool parseLastLineTointOk = int.TryParse(tmpLine.Substring(2, tmpLine.Length - 2).TrimStart('0'), NumberStyles.Any,
                     CultureInfo.InvariantCulture, out numberOfLineInfile);
                   if (!parseLastLineTointOk)
@@ -195,13 +212,13 @@ namespace DeleteFileLine
 
       if (fileContent.Count != 0)
       {
-        if (argumentDictionary["deleteheader"] == "true" && argumentDictionary["hasheader"] == "true")
+        if (argumentDictionary["deleteheader"] == "true" && argumentDictionary["hasheader"] == "true" && fileHasHeader)
         {
           Log(datedLogFileName, argumentDictionary["log"], $"Header (which is the first line) has been removed, it was: {fileContent[0]}");
           fileContent.RemoveAt(0);
         }
 
-        if (argumentDictionary["deletefooter"] == "true" && argumentDictionary["hasfooter"] == "true" && fileContent.Count != 0)
+        if (argumentDictionary["deletefooter"] == "true" && argumentDictionary["hasfooter"] == "true" && fileContent.Count != 0 && fileHasFooter)
         {
           if (argumentDictionary["countlines"] == "true")
           {
@@ -294,6 +311,9 @@ namespace DeleteFileLine
             Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The exception is: {exception}");
           }
         }
+
+        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The header was {Negative(fileHasHeader)}found in the file.");
+        Log(Settings.Default.LogFileName, argumentDictionary["log"], $"The footer was {Negative(fileHasFooter)}found in the file.");
       }
       else
       {
@@ -301,11 +321,21 @@ namespace DeleteFileLine
         Log(Settings.Default.LogFileName, argumentDictionary["log"], "The file cannot be processed because it is empty.");
       }
 
+      // Managing return code if header or footer were not found
+      if (!fileHasHeader && argumentDictionary["countlines"] == "true" && returnCode != 0)
+      {
+        returnCode = Settings.Default.ReturnCodeHeaderMissing;
+      }
+
+      if (!fileHasFooter && argumentDictionary["countlines"] == "true" && returnCode != 0)
+      {
+        returnCode = Settings.Default.ReturnCodeFooterMissing;
+      }
+
+
       if (argumentDictionary["countlines"] == "true")
       {
-
-
-        // Managing return code : we write a file with the return code which will be read by the DOS script to import SQL tables
+        // Managing return code : we write a file with the return code which will be read by the DOS script to import SQL tables into a database.
         const string returnCodeFileName = "ReturnCode.txt";
         try
         {
@@ -334,6 +364,16 @@ namespace DeleteFileLine
 
       Log(datedLogFileName, argumentDictionary["log"], $"END OF LOG.");
       Log(datedLogFileName, argumentDictionary["log"], "-----------");
+    }
+
+    /// <summary>
+    /// The method returns the string Not according to the boolean value passed in.
+    /// </summary>
+    /// <param name="booleanValue"></param>
+    /// <returns>Returns the string "Not" or nothing according to the boolean value passed in.</returns>
+    private static string Negative(bool booleanValue)
+    {
+      return booleanValue ? "" : "not ";
     }
 
     /// <summary>
