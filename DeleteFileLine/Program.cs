@@ -37,7 +37,8 @@ namespace DeleteFileLine
         {"newname", string.Empty},
         {"log", "false" },
         {"removeemptylines", "true" },
-        {"countlines", "false" }
+        {"countlines", "false" },
+        {"verifyheaderandfooter", "false" }
       };
       var fileContent = new List<string>();
       var fileTransformed = new List<string>();
@@ -207,7 +208,7 @@ namespace DeleteFileLine
             Log(datedLogFileName, argumentDictionary["log"], $"{numberOfLineInfile} lines stated in footer");
             Log(datedLogFileName, argumentDictionary["log"], $"Footer (which is the last line) has been removed, it was: {fileContent[fileContent.Count - 1]}");
           }
-          
+
           Log(datedLogFileName, argumentDictionary["log"], $"The file has {fileContent.Count - 1} lines");
           fileContent.RemoveAt(fileContent.Count - 1);
         }
@@ -231,17 +232,17 @@ namespace DeleteFileLine
         if (fileContent.Count == numberOfLineInfile && argumentDictionary["countlines"] == "true")
         {
           Log(datedLogFileName, argumentDictionary["log"], $"The file has the same number of lines as stated in the last line which is {numberOfLineInfile} lines.");
-          returnCode = 0;
+          returnCode = Settings.Default.ReturnCodeOK;
         }
         else if (fileContent.Count != numberOfLineInfile && argumentDictionary["countlines"] == "true")
         {
           Log(datedLogFileName, argumentDictionary["log"], $"The file has not the same number of lines {fileContent.Count} as stated in the last line which is {numberOfLineInfile} lines.");
-          returnCode = 3;
+          returnCode = Settings.Default.ReturnCodeKO;
         }
 
         if (argumentDictionary["countlines"] == "false")
         {
-          returnCode = 0;
+          returnCode = Settings.Default.ReturnCodeOK;
         }
 
         // If the user wants a different name for the transformed file
@@ -439,6 +440,7 @@ namespace DeleteFileLine
       display("/log:<true or false> false by default");
       display("/removeemptylines:<true or false> true by default");
       display("countlines:<true or false> false by default");
+      display("verifyheaderandfooter:<true or false> false by default");
       display(string.Empty);
       display("Examples:");
       display(string.Empty);
