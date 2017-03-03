@@ -466,7 +466,7 @@ namespace DeleteFileLine
       display(string.Empty);
       display(
         "You can write argument name (not its value) in uppercase or lowercase or a mixed of them (case insensitive)");
-      display("/filename is the same as /FileName or /fileName");
+      display("/filename is the same as /FileName or /fileName or /FILENAME");
       display(string.Empty);
       display("/fileName:<name of the file to be processed>");
       display("/separator:<the CSV separator> semicolon (;) is the default separator");
