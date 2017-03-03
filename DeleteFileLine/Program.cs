@@ -400,7 +400,7 @@ namespace DeleteFileLine
         result += $"{ts.Seconds} seconde{Plural(ts.Seconds)} ";
       }
 
-      if (!removeZeroArgument || ts.Seconds != 0)
+      if (!removeZeroArgument || ts.Milliseconds != 0)
       {
         result += $"{ts.Milliseconds} milliseconde{Plural(ts.Milliseconds)}";
       }
@@ -413,7 +413,7 @@ namespace DeleteFileLine
     /// </summary>
     /// <param name="number"></param>
     /// <returns>Returns an 's' if number if greater than one ortherwise returns an empty string.</returns>
-    private static string Plural(int number)
+    public static string Plural(int number)
     {
       return number > 1 ? "s" : string.Empty;
     }
@@ -423,7 +423,7 @@ namespace DeleteFileLine
     /// </summary>
     /// <param name="booleanValue"></param>
     /// <returns>Returns the string "Not" or nothing according to the boolean value passed in.</returns>
-    private static string Negative(bool booleanValue)
+    public static string Negative(bool booleanValue)
     {
       return booleanValue ? "" : "not ";
     }
