@@ -11,5 +11,17 @@
     <Setting Name="Language" Type="System.String" Scope="User">
       <Value Profile="(Default)">English</Value>
     </Setting>
+    <Setting Name="ReturnCodeOK" Type="System.Byte" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="ReturnCodeKO" Type="System.Byte" Scope="User">
+      <Value Profile="(Default)">3</Value>
+    </Setting>
+    <Setting Name="ReturnCodeHeaderMissing" Type="System.Byte" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="ReturnCodeFooterMissing" Type="System.Byte" Scope="User">
+      <Value Profile="(Default)">2</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

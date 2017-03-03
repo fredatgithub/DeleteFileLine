@@ -58,5 +58,53 @@ namespace DeleteFileLine.Properties {
                 this["Language"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public byte ReturnCodeOK {
+            get {
+                return ((byte)(this["ReturnCodeOK"]));
+            }
+            set {
+                this["ReturnCodeOK"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public byte ReturnCodeKO {
+            get {
+                return ((byte)(this["ReturnCodeKO"]));
+            }
+            set {
+                this["ReturnCodeKO"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public byte ReturnCodeHeaderMissing {
+            get {
+                return ((byte)(this["ReturnCodeHeaderMissing"]));
+            }
+            set {
+                this["ReturnCodeHeaderMissing"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public byte ReturnCodeFooterMissing {
+            get {
+                return ((byte)(this["ReturnCodeFooterMissing"]));
+            }
+            set {
+                this["ReturnCodeFooterMissing"] = value;
+            }
+        }
     }
 }
