@@ -12,7 +12,7 @@ namespace DeleteFileLine
   /// <summary>
   /// Class of the main program.
   /// </summary>
-  internal static class Program
+  public static class Program
   {
     /// <summary>
     /// Entry point of the program.
@@ -50,12 +50,14 @@ namespace DeleteFileLine
       bool fileHasFooter = false;
       string datedLogFileName = string.Empty;
       byte returnCode = 1;
+      Stopwatch chrono = new Stopwatch();
       if (arguments.Length == 0 || arguments[0].ToLower().Contains("help") || arguments[0].Contains("?"))
       {
         Usage();
         return;
       }
 
+      chrono.Start();
       // we split arguments into the dictionary
       foreach (string argument in arguments)
       {
@@ -362,8 +364,58 @@ namespace DeleteFileLine
         }
       }
 
+      chrono.Stop();
+      TimeSpan tickTimeSpan = chrono.Elapsed;
+      Log(datedLogFileName, argumentDictionary["log"], $"This program took {chrono.ElapsedMilliseconds} milliseconds which is {ConvertToTimeString(tickTimeSpan)}.");
       Log(datedLogFileName, argumentDictionary["log"], $"END OF LOG.");
       Log(datedLogFileName, argumentDictionary["log"], "-----------");
+    }
+
+    /// <summary>
+    /// Convert a Time span to days hours minutes seconds milliseconds.
+    /// </summary>
+    /// <param name="ts">The time span.</param>
+    /// <param name="removeZeroArgument">Do you want zero argument not send back, true by default.</param>
+    /// <returns>Returns a string with the number of days, hours, minutes, seconds and milliseconds.</returns>
+    public static string ConvertToTimeString(TimeSpan ts, bool removeZeroArgument = true)
+    {
+      string result = string.Empty;
+      if (!removeZeroArgument || ts.Days != 0 )
+      {
+        result = $"{ts.Days} jour{Plural(ts.Days)} ";
+      }
+
+      if (!removeZeroArgument || ts.Hours != 0)
+      {
+        result += $"{ts.Hours} heure{Plural(ts.Hours)} ";
+      }
+
+      if (!removeZeroArgument || ts.Minutes != 0)
+      {
+        result += $"{ts.Minutes} minute{Plural(ts.Minutes)} ";
+      }
+
+      if (!removeZeroArgument || ts.Seconds != 0)
+      {
+        result += $"{ts.Seconds} seconde{Plural(ts.Seconds)} ";
+      }
+
+      if (!removeZeroArgument || ts.Seconds != 0)
+      {
+        result += $"{ts.Milliseconds} milliseconde{Plural(ts.Milliseconds)}";
+      }
+
+      return result.TrimEnd();
+    }
+
+    /// <summary>
+    /// Add an 's' if the number is greater than 1.
+    /// </summary>
+    /// <param name="number"></param>
+    /// <returns>Returns an 's' if number if greater than one ortherwise returns an empty string.</returns>
+    private static string Plural(int number)
+    {
+      return number > 1 ? "s" : string.Empty;
     }
 
     /// <summary>
